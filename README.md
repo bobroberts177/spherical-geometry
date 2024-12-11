@@ -46,6 +46,7 @@ Testing all constellations on the sky, all of them worked without any issues (st
 Below is an example of solving the [GeCAA 2020 Theory task 7](https://gecaa.ee/wp-content/uploads/2020/10/GeCAA-Theoretical-solutions.pdf) analytically.
 ```rust
 use spherical_geometry::{SphericalPoint, GreatCircle};
+use std::f32::consts::PI;
 
 fn gecaa_2020_theory_7() {
     let delta = 10e-2;
@@ -60,10 +61,10 @@ fn gecaa_2020_theory_7() {
 
     let intersections = circle_1.intersect_great_circle(&circle_2).expect("The paths are not parallel");
 
-    let [(ra_1, dec_1), (ra_2, dec_2)] = if intersections[0].ra < intersections[1].ra {
-        [(intersections[1].ra, intersections[1].dec), (intersections[0].ra, intersections[0].dec)]
+    let [(ra_1, dec_1), (ra_2, dec_2)] = if intersections[0].ra() < intersections[1].ra() {
+        [(intersections[1].ra(), intersections[1].dec()), (intersections[0].ra(), intersections[0].dec())]
     } else {
-        [(intersections[0].ra, intersections[0].dec), (intersections[1].ra, intersections[1].dec)]
+        [(intersections[0].ra(), intersections[0].dec()), (intersections[1].ra(), intersections[1].dec())]
     };
 
     let (ra_1_corr, dec_1_corr) = ((360.0 - 21.94) * PI / 180.0, 13.96 * PI / 180.0); // Once again switch RA direction as the question measures azimuth from north to east
