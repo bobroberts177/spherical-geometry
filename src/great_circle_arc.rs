@@ -133,8 +133,8 @@ impl GreatCircleArc {
                             // They are parallel, but do not overlap each other
                             Ok(Vec::new())
                         }
-                    },
-                    _ => Err(err)
+                    }
+                    _ => Err(err),
                 }
             }
         }
