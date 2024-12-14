@@ -98,12 +98,14 @@ State key:
 | Construction as a perpendicular to a circle arc (through a point)                                        |  🟢   |
 | Check if it contains a point                                                                             |  🟢   |
 | Intersections with other great circle                                                                    |  🟢   |
-| **Great circle arcs**                                                                                    |  🟡   |
+| **Great circle arcs**                                                                                    |  🟢   |
 | Construction from two points                                                                             |  🟢   |
 | Check if it contains a point                                                                             |  🟢   |
 | Intersection with great circle                                                                           |  🟢   |
 | Clamped intersection with great circle (returning the closest endpoint if no intersection is on the arc) |  🟢   |
-| Intersection with another arc                                                                            |  🔴   |
-| **Polygons**                                                                                             |  🟢   |
+| Intersection with another arc                                                                            |  🟢   |
+| **Polygons**                                                                                             |  🟡   |
 | Construction from vertices                                                                               |  🟢   |
 | Check if it contains a point                                                                             |  🟢   |
+| Check if it intersects a great circle                                                                    |  🔴   |
+| Check if it intersects a great circle arc                                                                |  🔴   |

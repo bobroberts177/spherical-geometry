@@ -115,6 +115,29 @@ impl GreatCircleArc {
         Ok(intersections)
     }
 
+    /// Returns the intersections of this great circle arc with another one
+    ///
+    /// # Errors
+    /// If the great circles containing the arcs are (essentially) parallel (equal to each other) and overlapping, returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections.
+    pub fn intersect_great_circle_arc(&self, other: &Self) -> Result<Vec<SphericalPoint>, SphericalError> {
+        let circle = GreatCircle::from_arc(other);
+        match self.intersect_great_circle(&circle) {
+            Ok(intersections) => Ok(intersections.into_iter().filter(|intersection| other.contains_point(intersection)).collect()),
+            Err(err) => {
+                match err {
+                    SphericalError::IdenticalGreatCircles => {
+                        if self.contains_point(&other.start) || self.contains_point(&other.end) || other.contains_point(&self.start) || other.contains_point(&self.end) {
+                            Err(SphericalError::IdenticalGreatCircles)
+                        } else {
+                            Ok(Vec::new())
+                        }
+                    },
+                    _ => Err(err)
+                }
+            }
+        }
+    }
+
     /// Returns a point that is closest to the given point using a provided perpendicular circle. This is to be used when one has already constructed the perpendicular circle.
     ///
     /// The provided circle is intended to be perpendicular to the arc as that is the only time this function will return meaningful results. It does not, however, rely on this being the case, so you can use it with any circle if you find it useful.
@@ -354,6 +377,64 @@ mod tests {
         let intersections_4 = arc_4.intersect_great_circle(&circle_4).expect("The circles are not parallel");
         assert_eq!(intersections_4.len(), 1);
         assert!(intersections_4[0].approximately_equals(&SphericalPoint::new(PI / 5.0, -PI / 7.0), tolerance));
+    }
+
+    #[test]
+    fn intersect_great_circle_arc() {
+        let tolerance = 10e-4;
+
+        let arc_1_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let arc_1_2 = GreatCircleArc::new(SphericalPoint::new(PI / 4.0, 0.0), SphericalPoint::new(-PI / 4.0, 0.0)).expect("The points are far enough");
+        let intersections_1 = arc_1_1.intersect_great_circle_arc(&arc_1_2).expect("The circles are not parallel");
+        assert_eq!(intersections_1.len(), 1);
+        assert!(intersections_1[0].approximately_equals(&SphericalPoint::new(0.0, 0.0), tolerance));
+
+        let arc_2_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 6.0), SphericalPoint::new(0.0, PI / 4.0)).expect("The points are far enough");
+        let arc_2_2 = GreatCircleArc::new(SphericalPoint::new(PI / 4.0, 0.0), SphericalPoint::new(-PI / 4.0, 0.0)).expect("The points are far enough");
+        let intersections_2 = arc_2_1.intersect_great_circle_arc(&arc_2_2).expect("The circles are not parallel");
+        assert!(intersections_2.is_empty());
+
+        let arc_3_1 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(PI / 2.0, PI / 4.0)).expect("The points are far enough");
+        let arc_3_2 = GreatCircleArc::new(SphericalPoint::new(PI / 4.0, 0.0), SphericalPoint::new(-PI / 4.0, 0.0)).expect("The points are far enough");
+        let intersections_3 = arc_3_1.intersect_great_circle_arc(&arc_3_2).expect("The circles are not parallel");
+        assert_eq!(intersections_3.len(), 1);
+        assert!(intersections_3[0].approximately_equals(&SphericalPoint::new(0.0, 0.0), tolerance));
+
+        // Arcs miss but the great circles do not
+        let arc_4_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let arc_4_2 = GreatCircleArc::new(SphericalPoint::new(PI / 4.0, 0.0), SphericalPoint::new(PI / 3.0, 0.0)).expect("The points are far enough");
+        let intersections_4 = arc_4_1.intersect_great_circle_arc(&arc_4_2).expect("The circles are not parallel");
+        assert!(intersections_4.is_empty());
+
+        // The arcs are on the opposite sides of the sphere
+        let arc_5_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let arc_5_2 = GreatCircleArc::new(SphericalPoint::new(3.0 * PI / 4.0, 0.0), SphericalPoint::new(5.0 * PI / 4.0, 0.0)).expect("The points are far enough");
+        let intersections_5 = arc_5_1.intersect_great_circle_arc(&arc_5_2).expect("The circles are not parallel");
+        assert!(intersections_5.is_empty());
+
+        // Parallel, but not overlapping
+        let arc_6_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let arc_6_2 = GreatCircleArc::new(SphericalPoint::new(PI, PI / 4.0), SphericalPoint::new(PI, -PI / 4.0)).expect("The points are far enough");
+        let intersections_6 = arc_6_1.intersect_great_circle_arc(&arc_6_2).expect("The arcs do not overlap");
+        assert!(intersections_6.is_empty());
+
+        // Parallel and overlapping, but none contains the other
+        let arc_7_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let arc_7_2 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 3.0), SphericalPoint::new(0.0, -PI / 5.0)).expect("The points are far enough");
+        let intersections_7 = arc_7_1.intersect_great_circle_arc(&arc_7_2);
+        assert!(matches!(intersections_7, Err(SphericalError::IdenticalGreatCircles)));
+
+        // Parallel and overlapping, but first contains the second
+        let arc_8_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let arc_8_2 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 6.0), SphericalPoint::new(0.0, -PI / 5.0)).expect("The points are far enough");
+        let intersections_8 = arc_8_1.intersect_great_circle_arc(&arc_8_2);
+        assert!(matches!(intersections_8, Err(SphericalError::IdenticalGreatCircles)));
+
+        // Parallel and overlapping, but second contains the first
+        let arc_9_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(0.0, -PI / 5.0)).expect("The points are far enough");
+        let arc_9_2 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 3.0), SphericalPoint::new(0.0, -PI / 4.0)).expect("The points are far enough");
+        let intersections_8 = arc_9_1.intersect_great_circle_arc(&arc_9_2);
+        assert!(matches!(intersections_8, Err(SphericalError::IdenticalGreatCircles)));
     }
 
     #[test]
