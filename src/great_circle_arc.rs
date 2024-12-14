@@ -127,8 +127,10 @@ impl GreatCircleArc {
                 match err {
                     SphericalError::IdenticalGreatCircles => {
                         if self.contains_point(&other.start) || self.contains_point(&other.end) || other.contains_point(&self.start) || other.contains_point(&self.end) {
+                            // They are parallel and overlap each other
                             Err(SphericalError::IdenticalGreatCircles)
                         } else {
+                            // They are parallel, but do not overlap each other
                             Ok(Vec::new())
                         }
                     },
