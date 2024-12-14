@@ -1,4 +1,8 @@
 # Changelog
+## Upcoming - 0.3.0
+### ⭐ Added
+ - Checking intersections between great circle arcs
+
 ## 0.2.0 - 2024-10-07 - Polygons support
 This release focused on bringing in polygons support, but that required adding several other features :D
 
