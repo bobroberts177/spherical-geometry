@@ -18,6 +18,7 @@ pub use great_circle_arc::GreatCircleArc;
 pub use point::SphericalPoint;
 pub use polygon::{EdgeDirection, Polygon};
 
+pub(crate) const IDENTICAL_POINTS: f32 = 10e-5;
 pub(crate) const VEC_LEN_IS_ZERO: f32 = 10e-6;
 
 #[derive(Debug)]
