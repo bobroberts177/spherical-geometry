@@ -174,7 +174,7 @@ impl Polygon {
     /// # Errors
     /// This function does not generate its own errors, but may propagate the following:
     ///  - If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error (see [GreatCircleArc::new]). This should however never happen, as that is checked when the polygon is constructed.
-    ///  - If an edge fails to be intersected with the circle, it returns the corresponding error (refer to [GreatCircle::intersect_great_circle_arc] for more details).
+    ///  - If an edge fails to be intersected with the circle, it returns the corresponding error (refer to [GreatCircleArc::intersect_great_circle] for more details).
     pub fn great_circle_intersections(&self, circle: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
         let mut intersections = Vec::new();
 
@@ -202,7 +202,7 @@ impl Polygon {
     /// # Errors
     /// This function does not generate its own errors, but may propagate the following:
     ///  - If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error (see [GreatCircleArc::new]). This should however never happen, as that is checked when the polygon is constructed.
-    ///  - If an edge fails to be intersected with the circle, it returns the corresponding error (refer to [GreatCircle::intersects_great_circle_arc] for more details). Handles parallel circles as infinite intersections (returns `Ok(true)`) though.
+    ///  - If an edge fails to be intersected with the circle, it returns the corresponding error (refer to [GreatCircleArc::intersects_great_circle] for more details). Handles parallel circles as infinite intersections (returns `Ok(true)`) though.
     pub fn intersects_great_circle(&self, circle: &GreatCircle) -> Result<bool, SphericalError> {
         for i in 0..self.vertices.len() - 1 {
             let edge = GreatCircleArc::new(self.vertices[i], self.vertices[i + 1])?;

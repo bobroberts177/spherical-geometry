@@ -115,7 +115,7 @@ impl GreatCircleArc {
         Ok(intersections)
     }
 
-    /// Returns the intersections of this great circle arc with a great circle
+    /// Checks if there exists an intersection between this great circle arc and the provided great circle
     ///
     /// # Errors
     /// Only propagates errors originating from [Self::intersect_great_circle], but handles [SphericalError::IdenticalGreatCircles] internally
