@@ -13,7 +13,7 @@ impl GreatCircleArc {
     /// Creates a new great circle arc passing through the two points provided, taking the shorter of the two possible paths
     ///
     /// # Errors
-    /// If the points are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle (and therefore also the arc) is not uniquely defined
+    /// If the points are essentially equal or essentially antipodal, returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle (and therefore also the arc) is not uniquely defined
     pub fn new(point1: SphericalPoint, point2: SphericalPoint) -> Result<Self, SphericalError> {
         if point1.cartesian().cross(&point2.cartesian()).magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
             return Err(SphericalError::AntipodalOrTooClosePoints);
@@ -78,7 +78,7 @@ impl GreatCircleArc {
     /// Creates a new great circle passing through the provided point and perpendicular to the current circle arc
     ///
     /// # Errors
-    /// If the point and the pole of the current circle arc are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined
+    /// If the point and the pole of the current circle arc are essentially equal or essentially antipodal, returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle is not uniquely defined
     pub fn perpendicular_circle_through_point(&self, point: &SphericalPoint) -> Result<GreatCircle, SphericalError> {
         let point_1 = SphericalPoint::from_cartesian_vector3(self.normal());
         GreatCircle::new(point_1, *point)
@@ -87,7 +87,7 @@ impl GreatCircleArc {
     /// Returns the intersections of this great circle arc with a great circle
     ///
     /// # Errors
-    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
+    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns [SphericalError::IdenticalGreatCircles] as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
     pub fn intersect_great_circle(&self, other: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
         let normal1 = self.normal();
         let normal2 = other.normal();
@@ -137,7 +137,7 @@ impl GreatCircleArc {
     /// Returns the intersections of this great circle arc with another one
     ///
     /// # Errors
-    /// If the great circles containing the arcs are (essentially) parallel (equal to each other) and overlapping, returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections.
+    /// If the great circles containing the arcs are (essentially) parallel (equal to each other) and overlapping, returns [SphericalError::IdenticalGreatCircles] as then there is an infinite amount of intersections.
     ///
     /// Propagates the rest of errors originating from [Self::intersect_great_circle]
     pub fn intersect_great_circle_arc(&self, other: &Self) -> Result<Vec<SphericalPoint>, SphericalError> {
@@ -191,7 +191,7 @@ impl GreatCircleArc {
     /// The provided circle is intended to be perpendicular to the arc as that is the only time this function will return meaningful results. It does not, however, rely on this being the case, so you can use it with any circle if you find it useful.
     ///
     /// # Errors
-    /// If the perpendicular great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. This should, however, never happen and would indicate a bug in the implementation.
+    /// If the perpendicular great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns [SphericalError::IdenticalGreatCircles] as then there is an infinite amount of intersections. This should, however, never happen and would indicate a bug in the implementation.
     pub fn closest_point_to_point_with_circle(&self, perpendicular_circle: &GreatCircle, point: &SphericalPoint) -> Result<SphericalPoint, SphericalError> {
         let normal1 = self.normal();
         let normal2 = perpendicular_circle.normal();
@@ -233,9 +233,9 @@ impl GreatCircleArc {
     /// Returns the closest point to the arc from a given point.
     ///
     /// # Errors
-    /// If the perpendicular great circle can not be constructed (usually because the given point is a pole of the circle containing the arc), returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined.
+    /// If the perpendicular great circle can not be constructed (usually because the given point is a pole of the circle containing the arc), returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle is not uniquely defined.
     ///
-    /// If the perpendicular great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. This should, however, never happen and would indicate a bug in the implementation.
+    /// If the perpendicular great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns [SphericalError::IdenticalGreatCircles] as then there is an infinite amount of intersections. This should, however, never happen and would indicate a bug in the implementation.
     pub fn closest_point_to_point(&self, point: &SphericalPoint) -> Result<SphericalPoint, SphericalError> {
         let perpendicular_circle = self.perpendicular_circle_through_point(point)?;
 
@@ -279,7 +279,7 @@ impl GreatCircleArc {
     /// Returns the intersections of the arc with the great circle, clamped to the arc. If there are no intersections, the endpoint closest to the potential intersections (of the great circle and the arc extended into a great circle) is returned.
     ///
     /// # Errors
-    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
+    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns [SphericalError::IdenticalGreatCircles] as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
     pub fn intersect_great_circle_clamped(&self, circle: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
         let normal1 = self.normal();
         let normal2 = circle.normal();
@@ -326,7 +326,7 @@ impl GreatCircleArc {
     /// Returns the intersections of the arc with the great circle, clamped to the arc. If there are no intersections, the endpoint closest to the point provided is returned.
     ///
     /// # Errors
-    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
+    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns [SphericalError::IdenticalGreatCircles] as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
     pub fn intersect_great_circle_clamped_closest_to_point(&self, circle: &GreatCircle, point: &SphericalPoint) -> Result<Vec<SphericalPoint>, SphericalError> {
         let normal1 = self.normal();
         let normal2 = circle.normal();

@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 use std::f32::consts::PI;
 
-/// A point on a unit sphere, given by its right ascension and declination
+/// A point on a unit sphere, determined by its right ascension and declination
 ///
 /// The right ascension is measured "from north to west" - the same way it goes if you look at the sky in the northern hemisphere. This means that at RA=0 you start at the x-axis and then with increasing RA you go towards negative values of y.
 #[derive(Clone, Copy, Debug)]
@@ -14,7 +14,7 @@ pub struct SphericalPoint {
 }
 
 impl SphericalPoint {
-    /// Constructs a new `SphericalPoint` given its right ascension (or azimuth or equivalent) and declination (or altitude or equivalent)
+    /// Constructs a new [Self] given its right ascension (or azimuth or equivalent) and declination (or altitude or equivalent)
     pub fn new(ra: f32, dec: f32) -> Self {
         let cartesian = Self::ra_dec_to_cartesian(ra, dec);
         Self {
@@ -26,7 +26,7 @@ impl SphericalPoint {
         }
     }
 
-    /// Constructs a new `SphericalPoint` given its cartesian coordinates as a `nalgebra` `Vector3<f32>`
+    /// Constructs a new [Self] given its cartesian coordinates as a [nalgebra::Vector3]
     pub fn from_cartesian_vector3(vector: Vector3<f32>) -> Self {
         let dec = PI / 2.0 - vector.normalize().z.acos();
         let mut ra = vector.y.atan2(vector.x);
@@ -36,7 +36,7 @@ impl SphericalPoint {
         Self::new(ra, dec)
     }
 
-    /// Constructs a new `SphericalPoint` given its cartesian coordinates
+    /// Constructs a new [Self] given its cartesian coordinates
     pub fn from_cartesian(x: f32, y: f32, z: f32) -> Self {
         Self::from_cartesian_vector3(Vector3::new(x, y, z))
     }
@@ -66,7 +66,7 @@ impl SphericalPoint {
         self.z
     }
 
-    /// Gets the cartesian coordinates of this point as a `nalgebra` `Vector3<f32>`
+    /// Gets the cartesian coordinates of this point as a [nalgebra::Vector3]
     pub fn cartesian(&self) -> Vector3<f32> {
         let x = self.dec.cos() * self.ra.cos();
         let y = self.dec.cos() * self.ra.sin();
@@ -74,7 +74,7 @@ impl SphericalPoint {
         Vector3::new(x, y, z)
     }
 
-    /// Constructs a new `nalgebra` `Vector3<f32>` given its right ascension (or azimuth or equivalent) and declination (or altitude or equivalent)
+    /// Constructs a new [nalgebra::Vector3] given its right ascension (or azimuth or equivalent) and declination (or altitude or equivalent)
     pub fn ra_dec_to_cartesian(ra: f32, dec: f32) -> Vector3<f32> {
         let x = dec.cos() * ra.cos();
         let y = -dec.cos() * ra.sin();
@@ -94,7 +94,7 @@ impl SphericalPoint {
 
     /// Calculates the angular distance between the points
     ///
-    /// If you need to sort points by distance, but do not need the actual angular values for each of them, consider using `SphericalPoint::minus_cotan_distance`
+    /// If you need to sort points by distance, but do not need the actual angular values for each of them, consider using [Self::minus_cotan_distance]
     pub fn distance(&self, other: &Self) -> f32 {
         let angle_sin = self.cartesian().cross(&other.cartesian()).magnitude();
         let angle_cos = self.cartesian().dot(&other.cartesian());
