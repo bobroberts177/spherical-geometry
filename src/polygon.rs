@@ -11,7 +11,7 @@ use crate::{GreatCircle, GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN
 ///
 /// ## More intuitive method
 /// Imagine you are standing on the **inside** surface of the sphere, your head pointing in the direction of the centre of the sphere.
-/// If you were to walk along the edge and the inside of the polygon was on your left choose `CounterClockwise`, else choose `Clockwise`.
+/// If you were to walk along the edge and the inside of the polygon was on your left choose [Self::CounterClockwise], else choose [Self::Clockwise].
 #[derive(Clone, Copy)]
 pub enum EdgeDirection {
     Clockwise,
@@ -33,10 +33,10 @@ impl Polygon {
     /// Flipping the direction of the edges will cause a polygon to be the complement of what you would expect to be your polygon (if you wanted to create a small triangle around the North Pole but flipped the edge orientation, you would define the polygon to be everywhere apart from the North Pole).
     ///
     /// # Panics
-    /// This function panics if no vertices were provided. That does not constitute a valid polygon and you should always provide at least two vertices.
+    /// This function panics if no vertices were provided. That does not constitute a valid polygon, and you should always provide at least two vertices.
     ///
     /// # Errors
-    /// If any edge is defined by essentially equal or antipodal points, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle (and therefore also the edge) is not uniquely defined.
+    /// If any edge is defined by essentially equal or antipodal points, returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle (and therefore also the edge) is not uniquely defined.
     pub fn new(vertices_in: Vec<SphericalPoint>, edges_direction: EdgeDirection) -> Result<Self, SphericalError> {
         let mut vertices = vertices_in;
         if !vertices[0].approximately_equals(&vertices[vertices.len() - 1], VEC_LEN_IS_ZERO) {
@@ -66,7 +66,7 @@ impl Polygon {
     /// # Errors
     /// This function does not produce its own errors, but it will propagate inner errors out, see below. That should however never happen - if it does, it is a bug in an implementation in the library, so please report it should you encounter it.
     ///
-    /// If any of the edges fails to be constructed as a `GreatCircleArc`, returns the corresponding error. This should however never happen, as that is checked when the polygon is constructed.
+    /// If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error. This should however never happen, as that is checked when the polygon is constructed.
     ///
     /// Also, if any intersections fail the corresponding error will be returned. This should however also never happen.
     pub fn contains_point(&self, point: &SphericalPoint) -> Result<bool, SphericalError> {
