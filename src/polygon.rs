@@ -223,6 +223,33 @@ mod tests {
         assert!(!polygon_1
             .intersects_great_circle_arc(&arc_4)
             .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let polygon_2 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, 0.0),
+                SphericalPoint::new(0.0, 0.5),
+                SphericalPoint::new(1.2, 0.5),
+                SphericalPoint::new(0.8, 0.25),
+                SphericalPoint::new(1.2, 0.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let arc_5 = GreatCircleArc::new(SphericalPoint::new(1.0, 0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle_arc(&arc_5)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_6 = GreatCircleArc::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        assert!(!polygon_2
+            .intersects_great_circle_arc(&arc_6)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_7 = GreatCircleArc::new(SphericalPoint::new(-0.1, -0.3), SphericalPoint::new(0.8, 0.7)).expect("The arc should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle_arc(&arc_7)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
     }
 
     #[test]
@@ -289,5 +316,22 @@ mod tests {
         assert!(intersections_2_5.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
         assert!(intersections_2_5.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
         assert!(intersections_2_5.iter().any(|p| expected_i_3.approximately_equals(p, tolerance)));
+
+        let arc_6 = GreatCircleArc::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        let intersections_2_6 = polygon_2
+            .great_circle_arc_intersections(&arc_6)
+            .expect("It should be possible to determine if the arc intersects the polygon");
+        assert!(intersections_2_6.is_empty());
+
+        let arc_7 = GreatCircleArc::new(SphericalPoint::new(-0.1, -0.3), SphericalPoint::new(0.8, 0.7)).expect("The arc should be constructable");
+        let intersections_2_7 = polygon_2
+            .great_circle_arc_intersections(&arc_7)
+            .expect("It should be possible to determine if the arc intersects the polygon");
+        dbg!(&intersections_2_7);
+        assert_eq!(intersections_2_7.len(), 2);
+        let expected_i_1 = SphericalPoint::new(0.13007, 0.0);
+        let expected_i_2 = SphericalPoint::new(0.63939, 0.58435);
+        assert!(intersections_2_7.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_7.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
     }
 }
