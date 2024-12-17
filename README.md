@@ -104,8 +104,8 @@ State key:
 | Intersection with great circle                                                                           |  🟢   |
 | Clamped intersection with great circle (returning the closest endpoint if no intersection is on the arc) |  🟢   |
 | Intersection with another arc                                                                            |  🟢   |
-| **Polygons**                                                                                             |  🟡   |
+| **Polygons**                                                                                             |  🟢   |
 | Construction from vertices                                                                               |  🟢   |
 | Check if it contains a point                                                                             |  🟢   |
-| Check if it intersects a great circle                                                                    |  🔴   |
-| Check if it intersects a great circle arc                                                                |  🔴   |
+| Check if it intersects a great circle                                                                    |  🟢   |
+| Check if it intersects a great circle arc                                                                |  🟢   |
