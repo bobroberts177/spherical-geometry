@@ -115,6 +115,25 @@ impl GreatCircleArc {
         Ok(intersections)
     }
 
+    /// Returns the intersections of this great circle arc with a great circle
+    ///
+    /// # Errors
+    /// Only propagates errors originating from [Self::intersect_great_circle], but handles [SphericalError::IdenticalGreatCircles] internally
+    pub fn intersects_great_circle(&self, circle: &GreatCircle) -> Result<bool, SphericalError> {
+        match self.intersect_great_circle(&circle) {
+            Ok(intersections) => Ok(!intersections.is_empty()),
+            Err(err) => {
+                match err {
+                    SphericalError::IdenticalGreatCircles => {
+                        // They are parallel -> the arc is a part of the circle
+                        Ok(true)
+                    }
+                    _ => Err(err),
+                }
+            }
+        }
+    }
+
     /// Returns the intersections of this great circle arc with another one
     ///
     /// # Errors
