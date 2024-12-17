@@ -115,10 +115,31 @@ impl GreatCircleArc {
         Ok(intersections)
     }
 
+    /// Checks if there exists an intersection between this great circle arc and the provided great circle
+    ///
+    /// # Errors
+    /// Only propagates errors originating from [Self::intersect_great_circle], but handles [SphericalError::IdenticalGreatCircles] internally
+    pub fn intersects_great_circle(&self, circle: &GreatCircle) -> Result<bool, SphericalError> {
+        match self.intersect_great_circle(circle) {
+            Ok(intersections) => Ok(!intersections.is_empty()),
+            Err(err) => {
+                match err {
+                    SphericalError::IdenticalGreatCircles => {
+                        // They are parallel -> the arc is a part of the circle
+                        Ok(true)
+                    }
+                    _ => Err(err),
+                }
+            }
+        }
+    }
+
     /// Returns the intersections of this great circle arc with another one
     ///
     /// # Errors
     /// If the great circles containing the arcs are (essentially) parallel (equal to each other) and overlapping, returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections.
+    ///
+    /// Propagates the rest of errors originating from [Self::intersect_great_circle]
     pub fn intersect_great_circle_arc(&self, other: &Self) -> Result<Vec<SphericalPoint>, SphericalError> {
         let circle = GreatCircle::from_arc(other);
         match self.intersect_great_circle(&circle) {
@@ -132,6 +153,31 @@ impl GreatCircleArc {
                         } else {
                             // They are parallel, but do not overlap each other
                             Ok(Vec::new())
+                        }
+                    }
+                    _ => Err(err),
+                }
+            }
+        }
+    }
+
+    /// Checks if there exists an intersection of this arc with the provided one
+    ///
+    /// # Errors
+    /// Propagates errors originating from [Self::intersect_great_circle] apart from [SphericalError::IdenticalGreatCircles] for which the meaning in this context can be determined
+    pub fn intersects_great_circle_arc(&self, other: &Self) -> Result<bool, SphericalError> {
+        let circle = GreatCircle::from_arc(other);
+        match self.intersect_great_circle(&circle) {
+            Ok(intersections) => Ok(intersections.into_iter().any(|intersection| other.contains_point(&intersection))),
+            Err(err) => {
+                match err {
+                    SphericalError::IdenticalGreatCircles => {
+                        if self.contains_point(&other.start) || self.contains_point(&other.end) || other.contains_point(&self.start) || other.contains_point(&self.end) {
+                            // They are parallel and overlap each other
+                            Ok(true)
+                        } else {
+                            // They are parallel, but do not overlap each other
+                            Ok(false)
                         }
                     }
                     _ => Err(err),

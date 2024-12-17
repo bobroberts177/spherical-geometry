@@ -124,6 +124,94 @@ impl Polygon {
 
         Ok(is_inside)
     }
+
+    /// Returns the intersections of the edges of the polygon with a given great circle arc
+    ///
+    /// # Errors
+    /// This function does not generate its own errors, but may propagate the following:
+    ///  - If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error (see [GreatCircleArc::new]). This should however never happen, as that is checked when the polygon is constructed.
+    ///  - If an edge fails to be intersected with the arc, it returns the corresponding error (refer to [GreatCircleArc::intersect_great_circle_arc] for more details).
+    pub fn great_circle_arc_intersections(&self, arc: &GreatCircleArc) -> Result<Vec<SphericalPoint>, SphericalError> {
+        let mut intersections = Vec::new();
+
+        for i in 0..self.vertices.len() - 1 {
+            let edge = GreatCircleArc::new(self.vertices[i], self.vertices[i + 1])?;
+            let ints = edge.intersect_great_circle_arc(arc)?;
+            for int in ints {
+                if intersections
+                    .iter()
+                    .any(|intersection: &SphericalPoint| intersection.approximately_equals(&int, crate::IDENTICAL_POINTS))
+                {
+                    continue;
+                }
+                intersections.push(int);
+            }
+        }
+
+        Ok(intersections)
+    }
+
+    /// Checks if there exists an intersection of the edges of the polygon with the provided [GreatCircleArc]
+    ///
+    /// This function will in theory return errors less often than [Self::great_circle_arc_intersections] as it handles the cases when arcs are parallel
+    ///
+    /// # Errors
+    /// This function does not generate its own errors, but may propagate the following:
+    ///  - If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error (see [GreatCircleArc::new]). This should however never happen, as that is checked when the polygon is constructed.
+    ///  - If an edge fails to be intersected with the arc, it returns the corresponding error (refer to [GreatCircleArc::intersects_great_circle_arc] for more details). Handles parallel circles as infinite intersections (returns `Ok(true)`) though.
+    pub fn intersects_great_circle_arc(&self, arc: &GreatCircleArc) -> Result<bool, SphericalError> {
+        for i in 0..self.vertices.len() - 1 {
+            let edge = GreatCircleArc::new(self.vertices[i], self.vertices[i + 1])?;
+            if edge.intersects_great_circle_arc(arc)? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Returns the intersections of the edges of the polygon with a given great circle
+    ///
+    /// # Errors
+    /// This function does not generate its own errors, but may propagate the following:
+    ///  - If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error (see [GreatCircleArc::new]). This should however never happen, as that is checked when the polygon is constructed.
+    ///  - If an edge fails to be intersected with the circle, it returns the corresponding error (refer to [GreatCircleArc::intersect_great_circle] for more details).
+    pub fn great_circle_intersections(&self, circle: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
+        let mut intersections = Vec::new();
+
+        for i in 0..self.vertices.len() - 1 {
+            let edge = GreatCircleArc::new(self.vertices[i], self.vertices[i + 1])?;
+            let ints = edge.intersect_great_circle(circle)?;
+            for int in ints {
+                if intersections
+                    .iter()
+                    .any(|intersection: &SphericalPoint| intersection.approximately_equals(&int, crate::IDENTICAL_POINTS))
+                {
+                    continue;
+                }
+                intersections.push(int);
+            }
+        }
+
+        Ok(intersections)
+    }
+
+    /// Checks if there exists an intersection of the edges of the polygon with the provided [GreatCircle]
+    ///
+    /// This function will in theory return errors less often than [Self::great_circle_intersections] as it handles the cases when circles are parallel
+    ///
+    /// # Errors
+    /// This function does not generate its own errors, but may propagate the following:
+    ///  - If any of the edges fails to be constructed as a [GreatCircleArc], returns the corresponding error (see [GreatCircleArc::new]). This should however never happen, as that is checked when the polygon is constructed.
+    ///  - If an edge fails to be intersected with the circle, it returns the corresponding error (refer to [GreatCircleArc::intersects_great_circle] for more details). Handles parallel circles as infinite intersections (returns `Ok(true)`) though.
+    pub fn intersects_great_circle(&self, circle: &GreatCircle) -> Result<bool, SphericalError> {
+        for i in 0..self.vertices.len() - 1 {
+            let edge = GreatCircleArc::new(self.vertices[i], self.vertices[i + 1])?;
+            if edge.intersects_great_circle(circle)? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
 }
 
 #[cfg(test)]
@@ -146,5 +234,322 @@ mod tests {
         assert!(polygon_1.contains_point(&north_pole).expect("It should be possible to determine if the point is inside the polygon"));
         let south_pole = SphericalPoint::new(0.0, -PI / 2.0);
         assert!(!polygon_1.contains_point(&south_pole).expect("It should be possible to determine if the point is inside the polygon"));
+    }
+
+    #[test]
+    fn intersects_arc() {
+        let polygon_1 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, PI / 3.0),
+                SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0),
+                SphericalPoint::new(2.0 * PI / 3.0, PI / 3.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let arc_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 3.0), SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0)).expect("The arc should be constructable");
+        assert!(polygon_1
+            .intersects_great_circle_arc(&arc_1)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_2 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 3.0)).expect("The arc should be constructable");
+        assert!(polygon_1
+            .intersects_great_circle_arc(&arc_2)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_3 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 2.0)).expect("The arc should be constructable");
+        assert!(polygon_1
+            .intersects_great_circle_arc(&arc_3)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_4 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(PI / 6.0, PI / 5.0)).expect("The arc should be constructable");
+        assert!(!polygon_1
+            .intersects_great_circle_arc(&arc_4)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let polygon_2 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, 0.0),
+                SphericalPoint::new(0.0, 0.5),
+                SphericalPoint::new(1.2, 0.5),
+                SphericalPoint::new(0.8, 0.25),
+                SphericalPoint::new(1.2, 0.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let arc_5 = GreatCircleArc::new(SphericalPoint::new(1.0, 0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle_arc(&arc_5)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_6 = GreatCircleArc::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        assert!(!polygon_2
+            .intersects_great_circle_arc(&arc_6)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+
+        let arc_7 = GreatCircleArc::new(SphericalPoint::new(-0.1, -0.3), SphericalPoint::new(0.8, 0.7)).expect("The arc should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle_arc(&arc_7)
+            .expect("It should be possible to determine if the arc intersects the polygon"));
+    }
+
+    #[test]
+    fn arc_intersections() {
+        let polygon_1 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, PI / 3.0),
+                SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0),
+                SphericalPoint::new(2.0 * PI / 3.0, PI / 3.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let arc_1 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 3.0), SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0)).expect("The arc should be constructable");
+        assert!(matches!(polygon_1.great_circle_arc_intersections(&arc_1), Err(SphericalError::IdenticalGreatCircles)));
+
+        let arc_2 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 3.0)).expect("The arc should be constructable");
+        assert_eq!(
+            polygon_1
+                .great_circle_arc_intersections(&arc_2)
+                .expect("It should be possible to determine if the arc intersects the polygon")
+                .len(),
+            1
+        );
+
+        let arc_3 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 2.0)).expect("The arc should be constructable");
+        assert_eq!(
+            polygon_1
+                .great_circle_arc_intersections(&arc_3)
+                .expect("It should be possible to determine if the arc intersects the polygon")
+                .len(),
+            1
+        );
+
+        let arc_4 = GreatCircleArc::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(PI / 6.0, PI / 5.0)).expect("The arc should be constructable");
+        assert!(polygon_1
+            .great_circle_arc_intersections(&arc_4)
+            .expect("It should be possible to determine if the arc intersects the polygon")
+            .is_empty());
+
+        let polygon_2 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, 0.0),
+                SphericalPoint::new(0.0, 0.5),
+                SphericalPoint::new(1.2, 0.5),
+                SphericalPoint::new(0.8, 0.25),
+                SphericalPoint::new(1.2, 0.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let tolerance = 10e-4;
+        let arc_5 = GreatCircleArc::new(SphericalPoint::new(1.0, 0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        let intersections_2_5 = polygon_2
+            .great_circle_arc_intersections(&arc_5)
+            .expect("It should be possible to determine if the arc intersects the polygon");
+        assert_eq!(intersections_2_5.len(), 3);
+        dbg!(&intersections_2_5);
+        let expected_i_1 = SphericalPoint::new(0.92165, 0.0);
+        let expected_i_2 = SphericalPoint::new(0.94532, 0.16371);
+        let expected_i_3 = SphericalPoint::new(0.97795, 0.37422);
+        assert!(intersections_2_5.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_5.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+        assert!(intersections_2_5.iter().any(|p| expected_i_3.approximately_equals(p, tolerance)));
+
+        let arc_6 = GreatCircleArc::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.9, -0.15)).expect("The arc should be constructable");
+        let intersections_2_6 = polygon_2
+            .great_circle_arc_intersections(&arc_6)
+            .expect("It should be possible to determine if the arc intersects the polygon");
+        assert!(intersections_2_6.is_empty());
+
+        let arc_7 = GreatCircleArc::new(SphericalPoint::new(-0.1, -0.3), SphericalPoint::new(0.8, 0.7)).expect("The arc should be constructable");
+        let intersections_2_7 = polygon_2
+            .great_circle_arc_intersections(&arc_7)
+            .expect("It should be possible to determine if the arc intersects the polygon");
+        dbg!(&intersections_2_7);
+        assert_eq!(intersections_2_7.len(), 2);
+        let expected_i_1 = SphericalPoint::new(0.13007, 0.0);
+        let expected_i_2 = SphericalPoint::new(0.63939, 0.58435);
+        assert!(intersections_2_7.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_7.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+    }
+
+    #[test]
+    fn intersects_circle() {
+        let polygon_1 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, PI / 3.0),
+                SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0),
+                SphericalPoint::new(2.0 * PI / 3.0, PI / 3.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let circle_1 = GreatCircle::new(SphericalPoint::new(0.0, PI / 3.0), SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0)).expect("The circle should be constructable");
+        assert!(polygon_1
+            .intersects_great_circle(&circle_1)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let circle_2 = GreatCircle::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 3.0)).expect("The circle should be constructable");
+        assert!(polygon_1
+            .intersects_great_circle(&circle_2)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let circle_3 = GreatCircle::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 2.0)).expect("The circle should be constructable");
+        assert!(polygon_1
+            .intersects_great_circle(&circle_3)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let circle_4 = GreatCircle::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(PI / 6.0, PI / 5.0)).expect("The circle should be constructable");
+        assert!(!polygon_1
+            .intersects_great_circle(&circle_4)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let polygon_2 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, 0.0),
+                SphericalPoint::new(0.0, 0.5),
+                SphericalPoint::new(1.2, 0.5),
+                SphericalPoint::new(0.8, 0.25),
+                SphericalPoint::new(1.2, 0.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let circle_5 = GreatCircle::new(SphericalPoint::new(1.0, 0.5), SphericalPoint::new(0.9, -0.15)).expect("The circle should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle(&circle_5)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let circle_6 = GreatCircle::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.9, -0.15)).expect("The circle should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle(&circle_6)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let circle_7 = GreatCircle::new(SphericalPoint::new(-0.1, -0.3), SphericalPoint::new(0.8, 0.7)).expect("The circle should be constructable");
+        assert!(polygon_2
+            .intersects_great_circle(&circle_7)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+
+        let circle_8 = GreatCircle::new(SphericalPoint::new(0.0, -0.5), SphericalPoint::new(0.9, -0.2)).expect("The circle should be constructable");
+        assert!(!polygon_2
+            .intersects_great_circle(&circle_8)
+            .expect("It should be possible to determine if the circle intersects the polygon"));
+    }
+
+    #[test]
+    fn circle_intersections() {
+        let tolerance = 10e-4;
+
+        let polygon_1 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, PI / 3.0),
+                SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0),
+                SphericalPoint::new(2.0 * PI / 3.0, PI / 3.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let circle_1 = GreatCircle::new(SphericalPoint::new(0.0, PI / 3.0), SphericalPoint::new(-2.0 * PI / 3.0, PI / 3.0)).expect("The circle should be constructable");
+        assert!(matches!(polygon_1.great_circle_intersections(&circle_1), Err(SphericalError::IdenticalGreatCircles)));
+
+        let circle_2 = GreatCircle::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 3.0)).expect("The circle should be constructable");
+        let expected_i_1 = SphericalPoint::new(0.0, PI / 3.0);
+        let expected_i_2 = SphericalPoint::new(PI, 1.28976);
+        let intersections_1_2 = polygon_1
+            .great_circle_intersections(&circle_2)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert_eq!(intersections_1_2.len(), 2);
+        assert!(intersections_1_2.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_1_2.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+
+        let circle_3 = GreatCircle::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(0.0, PI / 2.0)).expect("The circle should be constructable");
+        let expected_i_1 = SphericalPoint::new(0.0, PI / 3.0);
+        let expected_i_2 = SphericalPoint::new(PI, 1.28976);
+        let intersections_1_3 = polygon_1
+            .great_circle_intersections(&circle_3)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert_eq!(intersections_1_3.len(), 2);
+        assert!(intersections_1_3.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_1_3.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+
+        let circle_4 = GreatCircle::new(SphericalPoint::new(0.0, PI / 4.0), SphericalPoint::new(PI / 6.0, PI / 5.0)).expect("The circle should be constructable");
+        let intersections_1_4 = polygon_1
+            .great_circle_intersections(&circle_4)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert!(intersections_1_4.is_empty());
+
+        let polygon_2 = Polygon::new(
+            vec![
+                SphericalPoint::new(0.0, 0.0),
+                SphericalPoint::new(0.0, 0.5),
+                SphericalPoint::new(1.2, 0.5),
+                SphericalPoint::new(0.8, 0.25),
+                SphericalPoint::new(1.2, 0.0),
+            ],
+            EdgeDirection::CounterClockwise,
+        )
+        .expect("The polygon should be constructable");
+
+        let circle_5 = GreatCircle::new(SphericalPoint::new(1.0, 0.5), SphericalPoint::new(0.9, -0.15)).expect("The circle should be constructable");
+        let expected_i_1 = SphericalPoint::new(0.92165, 0.0);
+        let expected_i_2 = SphericalPoint::new(0.94532, 0.16371);
+        let expected_i_3 = SphericalPoint::new(0.97795, 0.37422);
+        let expected_i_4 = SphericalPoint::new(1.00878, 0.54583);
+        let intersections_2_5 = polygon_2
+            .great_circle_intersections(&circle_5)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert_eq!(intersections_2_5.len(), 4);
+        assert!(intersections_2_5.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_5.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+        assert!(intersections_2_5.iter().any(|p| expected_i_3.approximately_equals(p, tolerance)));
+        assert!(intersections_2_5.iter().any(|p| expected_i_4.approximately_equals(p, tolerance)));
+
+        let circle_6 = GreatCircle::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.9, -0.15)).expect("The circle should be constructable");
+        let expected_i_1 = SphericalPoint::new(0.69511, 0.58262);
+        let expected_i_2 = SphericalPoint::new(0.86191, 0.0);
+        let intersections_2_6 = polygon_2
+            .great_circle_intersections(&circle_6)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert_eq!(intersections_2_6.len(), 2);
+        dbg!(&intersections_2_6);
+        assert!(intersections_2_6.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_6.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+
+        let circle_7 = GreatCircle::new(SphericalPoint::new(-0.1, -0.3), SphericalPoint::new(0.8, 0.7)).expect("The circle should be constructable");
+        let expected_i_1 = SphericalPoint::new(0.63939, 0.58435);
+        let expected_i_2 = SphericalPoint::new(0.13007, 0.0);
+        let intersections_2_7 = polygon_2
+            .great_circle_intersections(&circle_7)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert_eq!(intersections_2_7.len(), 2);
+        assert!(intersections_2_7.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_7.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+
+        let circle_8 = GreatCircle::new(SphericalPoint::new(0.0, -0.5), SphericalPoint::new(0.9, -0.2)).expect("The circle should be constructable");
+        let intersections_2_8 = polygon_2
+            .great_circle_intersections(&circle_8)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert!(intersections_2_8.is_empty());
+
+        let circle_9 = GreatCircle::new(SphericalPoint::new(1.0, -0.5), SphericalPoint::new(0.90142, -0.15)).expect("The circle should be constructable");
+        let expected_i_1 = SphericalPoint::new(0.69950, 0.58243);
+        let expected_i_2 = SphericalPoint::new(0.80033, 0.25024);
+        let expected_i_3 = SphericalPoint::new(0.86387, 0.0);
+        let intersections_2_9 = polygon_2
+            .great_circle_intersections(&circle_9)
+            .expect("It should be possible to determine if the circle intersects the polygon");
+        assert_eq!(intersections_2_9.len(), 3);
+        assert!(intersections_2_9.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
+        assert!(intersections_2_9.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
+        assert!(intersections_2_9.iter().any(|p| expected_i_3.approximately_equals(p, tolerance)));
     }
 }

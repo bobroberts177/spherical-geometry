@@ -2,6 +2,8 @@
 ## Upcoming - 0.3.0
 ### ⭐ Added
  - Checking intersections between great circle arcs (https://github.com/stellarguesser/spherical-geometry/pull/6)
+ - Checking intersections between polygons and great circles or great circle arcs (https://github.com/stellarguesser/spherical-geometry/pull/8)
+ - Checking if great circles/great circles arcs intersect one another (`true`/`false`, not returning the list of intersections) (https://github.com/stellarguesser/spherical-geometry/pull/8)
 
 ### 🐛 Fixed
  - Fixed the example in README (GeCAA Theory task 7) (https://github.com/stellarguesser/spherical-geometry/pull/5)
