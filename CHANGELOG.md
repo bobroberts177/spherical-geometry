@@ -1,5 +1,5 @@
 # Changelog
-## Upcoming - 0.3.0
+## 0.3.0 - 2024-12-19 - More intersections support
 ### ⭐ Added
  - Checking intersections between great circle arcs (https://github.com/stellarguesser/spherical-geometry/pull/6)
  - Checking intersections between polygons and great circles or great circle arcs (https://github.com/stellarguesser/spherical-geometry/pull/8)
