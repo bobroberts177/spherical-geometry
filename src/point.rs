@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
-use std::f32::consts::PI;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::f32::consts::PI;
 
 /// A point on a unit sphere, determined by its right ascension and declination
 ///
